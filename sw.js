@@ -49,20 +49,20 @@ self.addEventListener('activate',(e)=>{
 
 self.addEventListener('fetch',(e)=>{
     // console.log('fetch',e);
-    e.respondWith(
-        caches.match(e.request).then(res=>{
-            return res || fetch(e.request).then(fetchRes=>{
-                return caches.open(dynamicCache).then(cache=>{
-                    cache.put(e.request.url,fetchRes.clone());
-                    limitCache(dynamicCache,5);
-                    return fetchRes;
-                })
-            })
-        }).catch(()=>{
-            // show offline fallout page for only html pages req when offline
-            if(e.request.url.indexOf('.html')>-1){
-                return caches.match('/pages/offline.html')
-            }
-        })
-    )
+    // e.respondWith(
+    //     caches.match(e.request).then(res=>{
+    //         return res || fetch(e.request).then(fetchRes=>{
+    //             return caches.open(dynamicCache).then(cache=>{
+    //                 cache.put(e.request.url,fetchRes.clone());
+    //                 limitCache(dynamicCache,5);
+    //                 return fetchRes;
+    //             })
+    //         })
+    //     }).catch(()=>{
+    //         // show offline fallout page for only html pages req when offline
+    //         if(e.request.url.indexOf('.html')>-1){
+    //             return caches.match('/pages/offline.html')
+    //         }
+    //     })
+    // )
 })
