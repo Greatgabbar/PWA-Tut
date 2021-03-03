@@ -1,6 +1,6 @@
-const staticCacheName='site-static-v1';
-const dynamicCache='site-dynamic';
-const assets=[
+const staticCacheName = 'site-static-v3';
+const dynamicCacheName = 'site-dynamic-v3';
+const assets = [
   '/',
   '/index.html',
   '/js/app.js',
@@ -14,55 +14,60 @@ const assets=[
   '/pages/offline.html'
 ];
 
-const limitCache=(cacheName,size)=>{
-    caches.open(cacheName).then(cache=>{
-        cache.keys().then(keys=>{
-            if(keys.length > size ){
-                cache.delete(keys[0]).then(limitCache(cacheName,size))
-            }
-        })
+// cache size limit function
+const limitCacheSize = (name, size) => {
+  caches.open(name).then(cache => {
+    cache.keys().then(keys => {
+      if(keys.length > size){
+        cache.delete(keys[0]).then(limitCacheSize(name, size));
+      }
+    });
+  });
+};
+
+// install event
+self.addEventListener('install', evt => {
+  //console.log('service worker installed');
+  evt.waitUntil(
+    caches.open(staticCacheName).then((cache) => {
+      console.log('caching shell assets');
+      cache.addAll(assets);
     })
-}
+  );
+});
 
-self.addEventListener('install',(e)=>{
-    console.log("Service worker successfully installed!!!");//
-    // we can do here the caching work i.e those available for offline mode
-    e.waitUntil(
-        caches.open(staticCacheName).then(cache=>{
-            console.log('caching ...........');
-            cache.addAll(assets);
-        })
+// activate event
+self.addEventListener('activate', evt => {
+  //console.log('service worker activated');
+  evt.waitUntil(
+    caches.keys().then(keys => {
+      //console.log(keys);
+      return Promise.all(keys
+        .filter(key => key !== staticCacheName && key !== dynamicCacheName)
+        .map(key => caches.delete(key))
+      );
+    })
+  );
+});
+
+// fetch events
+self.addEventListener('fetch', evt => {
+  if(evt.request.url.indexOf('firestore.googleapis.com') === -1){
+    evt.respondWith(
+      caches.match(evt.request).then(cacheRes => {
+        return cacheRes || fetch(evt.request).then(fetchRes => {
+          return caches.open(dynamicCacheName).then(cache => {
+            cache.put(evt.request.url, fetchRes.clone());
+            // check cached items size
+            limitCacheSize(dynamicCacheName, 15);
+            return fetchRes;
+          })
+        });
+      }).catch(() => {
+        if(evt.request.url.indexOf('.html') > -1){
+          return caches.match('/pages/offline.html');
+        } 
+      })
     );
-})
-
-self.addEventListener('activate',(e)=>{
-    // console.log('Service Worker successfully Activated!!!!');
-    e.waitUntil(
-        caches.keys().then(keys => {
-            return Promise.all(
-                keys.filter(key=>key!== staticCacheName && key!== dynamicCache)
-                .map(key=> caches.delete(key))
-            )
-        })
-    )
-})
-
-self.addEventListener('fetch',(e)=>{
-    // console.log('fetch',e);
-    // e.respondWith(
-    //     caches.match(e.request).then(res=>{
-    //         return res || fetch(e.request).then(fetchRes=>{
-    //             return caches.open(dynamicCache).then(cache=>{
-    //                 cache.put(e.request.url,fetchRes.clone());
-    //                 limitCache(dynamicCache,5);
-    //                 return fetchRes;
-    //             })
-    //         })
-    //     }).catch(()=>{
-    //         // show offline fallout page for only html pages req when offline
-    //         if(e.request.url.indexOf('.html')>-1){
-    //             return caches.match('/pages/offline.html')
-    //         }
-    //     })
-    // )
-})
+  }
+});
