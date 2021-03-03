@@ -12,14 +12,13 @@ db.enablePersistence()
 db.collection('racipe').onSnapshot(snapshot=>{
     // console.log(snapshot.docChanges());
     snapshot.docChanges().forEach(change=>{
-         console.log(change);
         if(change.type==="added"){
             //data added
-            console.log(change.id)
-            renderRacipe(change.doc.data(),change.id);
+            renderRacipe(change.doc.data(),change.doc.id);
         }
         if(change.type==="removed"){
             //remove data from
+            removeRacipe(change.doc.id);
         }
     })
 })
@@ -42,5 +41,10 @@ form.addEventListener('submit',(e)=>{
 
 const card=document.querySelector('.recipes');
 card.addEventListener('click', e =>{
-    console.log(e.target)
+    if(e.target.nodeName==="I"){
+        console.log(1);
+        const id=e.target.getAttribute('data-id');
+        db.collection('racipe').doc(id).delete();
+        console.log(id);
+    }
 })

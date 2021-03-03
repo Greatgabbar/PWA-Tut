@@ -16,9 +16,14 @@ const renderRacipe=(data,id)=>{
         <div class="recipe-ingredients">${data.ingredients}</div>
       </div>
       <div class="recipe-delete">
-        <i class="material-icons">delete_outline</i>
+        <i class="material-icons" data-id="${id}" >delete_outline</i>
       </div>
     </div>
   `;
   document.querySelector('.recipes').innerHTML+=html;
+}
+
+const removeRacipe = (id)=>{
+  const racipe=document.querySelector(`.recipe[data-id=${id}]`);
+  racipe.remove();
 }
